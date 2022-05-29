@@ -19,8 +19,10 @@ import pandas as pd
 try: # to deploy in heroku, if you want to run locally, just create a file called: local_settings.py
     import local_settings
     DEBUG = True
+    print("LOCAL")
 except:
     DEBUG = False 
+    print("IN HEROKU")
 
 def scrapping (keyword):
     url = "https://www.linkedin.com/jobs/search?keywords=&location=Paraguay&geoId=104065273&trk=public_jobs_jobs-search-bar_search-submit&position=1&pageNum=0"

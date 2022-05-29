@@ -15,7 +15,12 @@ import pandas as pd
 def scrapping (keyword):
     url = "https://www.linkedin.com/jobs/search?keywords=&location=Paraguay&geoId=104065273&trk=public_jobs_jobs-search-bar_search-submit&position=1&pageNum=0"
     try:
+        chrome_options = webdriver.ChromeOptions()
+        chrome_options.add_argument("--headless")
+        chrome_options.add_argument("--disable-dev-shm-usage")
+        chrome_options.add_argument("--no-sandbox")
         wd = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
+
         wd.get(url)
         # options = webdriver.ChromeOptions()
         # options.add_argument('headless')
@@ -163,6 +168,7 @@ def scrapping (keyword):
 
 
 lista_de_jobs = scrapping("python vue")
+lista_de_jobs.to_csv("data_output.csv")
 # try:
 #     keywords =request.get("https://test-bot-penguin.herokuapp.com/keywords")
 #     unique_list = list(dict.fromkeys(keywords))

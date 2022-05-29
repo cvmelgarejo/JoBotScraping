@@ -1,16 +1,26 @@
 # Version sin flask
 # Faltaria decidir si poner filtros por fechas
 
-from urllib import request
+import time
+import sqlite3
+import os
+
+
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options
-import time
-import sqlite3
+
 import pandas as pd
+
+
+try: # to deploy in heroku, if you want to run locally, just create a file called: local_settings.py
+    import local_settings
+    DEBUG = True
+except:
+    DEBUG = False 
 
 def scrapping (keyword):
     url = "https://www.linkedin.com/jobs/search?keywords=&location=Paraguay&geoId=104065273&trk=public_jobs_jobs-search-bar_search-submit&position=1&pageNum=0"
@@ -19,8 +29,11 @@ def scrapping (keyword):
         chrome_options.add_argument("--headless")
         chrome_options.add_argument("--disable-dev-shm-usage")
         chrome_options.add_argument("--no-sandbox")
-        wd = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
-
+        if DEBUG:
+            wd = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+        else: # for heroku
+            chrome_options.binary_location = os.environ.get("GOOGLE_CHROME_BIN")
+            wd = webdriver.Chrome(executable_path=os.environ.get("CHROMEDRIVER_PATH"), chrome_options=chrome_options)
         wd.get(url)
         # options = webdriver.ChromeOptions()
         # options.add_argument('headless')

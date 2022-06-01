@@ -1,21 +1,55 @@
 # Version sin flask
 # Faltaria decidir si poner filtros por fechas
 
-from urllib import request
+import time
+import sqlite3
+import os
+import platform
+
+#third part libs
+from dotenv import load_dotenv
+from supabase import create_client, Client
+
+load_dotenv()
+from webdriver_manager.firefox import GeckoDriverManager
+
+
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options
-import time
-import sqlite3
+
 import pandas as pd
 
-def scrapping (keyword):
+
+try: # to deploy in heroku, if you want to run locally, just create a file called: local_settings.py
+    import local_settings
+    DEBUG = True
+    print("LOCAL")
+except:
+    DEBUG = False 
+    print("IN HEROKU")
+
+
+
+def scrapping(keyword):
     url = "https://www.linkedin.com/jobs/search?keywords=&location=Paraguay&geoId=104065273&trk=public_jobs_jobs-search-bar_search-submit&position=1&pageNum=0"
     try:
-        wd = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
+        chrome_options = webdriver.ChromeOptions()
+        chrome_options.add_argument("--headless")
+        chrome_options.add_argument("--disable-dev-shm-usage")
+        chrome_options.add_argument("--no-sandbox")
+        if DEBUG:
+            if "linux" in platform.platform().lower(): 
+                wd = webdriver.Firefox(executable_path="./geckodriver")
+                #wd = webdriver.Firefox(service=Service(GeckoDriverManager().install()))
+            else:
+                wd = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+        else: # for heroku
+            chrome_options.binary_location = os.environ.get("GOOGLE_CHROME_BIN")
+            wd = webdriver.Chrome(executable_path=os.environ.get("CHROMEDRIVER_PATH"), chrome_options=chrome_options)
         wd.get(url)
         # options = webdriver.ChromeOptions()
         # options.add_argument('headless')
@@ -55,6 +89,7 @@ def scrapping (keyword):
                     wd.find_element(by=By.XPATH, value="/html/body/main/div/section/button").click()
                     time.sleep(5)
                 except:
+                    print("didnt find element to click ")
                     pass
                     time.sleep(5)
 
@@ -151,9 +186,11 @@ def scrapping (keyword):
                     industries.append(','.join(industries0))
                 except :
                     industries.append("")
-
-            job_data = pd.DataFrame({"keyword":claves, "job_id": job_id, "job_title": job_title,"company_name": company_name,"location": location, "date": date, "job_link": job_link, "seniority": seniority, "job_func": ','.join(job_func),"emp_type": emp_type,  "industries": industries })
-            
+            data_to_upload = {"keyword":claves, "job_id": job_id, "job_title": job_title,"company_name": company_name,"location": location, "date": date, "job_link": job_link, "seniority": seniority, "job_func": ','.join(job_func),"emp_type": emp_type,  "industries": industries }
+            job_data = pd.DataFrame(data_to_upload)
+            if SUPABASE_ENABLE:
+                data = supabase.table(TABLE_NAME).insert(data_to_upload).execute()
+                print("uploaded", data)
             print(job_data)
     except Exception as e:
         print('Error: ' + str(e))
@@ -162,7 +199,22 @@ def scrapping (keyword):
     return job_data
 
 
+
+#----------------------------------main----------------------------------
+SUPABASE_ENABLE = False
+
+SUPABASE_URL = os.getenv('SUPABASE_URL')
+SUPABASE_KEY = os.getenv('SUPABASE_KEY')
+TABLE_NAME = "jobot"
+
+if SUPABASE_URL != "":
+    SUPABASE_ENABLE = True
+    supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+else: 
+    supabase = None
+
 lista_de_jobs = scrapping("python vue")
+#lista_de_jobs.to_csv("data_output.csv")
 # try:
 #     keywords =request.get("https://test-bot-penguin.herokuapp.com/keywords")
 #     unique_list = list(dict.fromkeys(keywords))
